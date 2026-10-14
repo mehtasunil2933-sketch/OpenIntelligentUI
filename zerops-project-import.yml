@@ -1,0 +1,40 @@
+# Paste this file into Zerops > Import a project.
+# Choose EU Central (or your preferred region) and leave ZCP off for the trial.
+# Deployment configuration lives in zerops.yaml in this repository.
+# Source-checked configuration; not yet verified by a live Zerops deployment.
+# No API keys are stored here: enter OpenAI and Jev/TypeSafe keys in the website.
+# Stock agent checkpoints are in memory and do not survive restarts.
+# The public website has no application login; add authentication before production use.
+project:
+  name: openintelligentui
+  corePackage: LIGHT
+
+services:
+  - hostname: uiagent
+    type: python@3.12
+    buildFromGit: https://github.com/mehtasunil2933-sketch/OpenIntelligentUI
+    zeropsSetup: uiagent
+    minContainers: 1
+    maxContainers: 1
+    verticalAutoscaling:
+      minRam: 0.5
+      maxRam: 2
+      minFreeRamGB: 0.25
+      minCpu: 1
+      maxCpu: 2
+      minDisk: 5
+
+  - hostname: web
+    type: nodejs@22
+    buildFromGit: https://github.com/mehtasunil2933-sketch/OpenIntelligentUI
+    zeropsSetup: web
+    enableSubdomainAccess: true
+    minContainers: 1
+    maxContainers: 1
+    verticalAutoscaling:
+      minRam: 0.5
+      maxRam: 2
+      minFreeRamGB: 0.25
+      minCpu: 1
+      maxCpu: 2
+      minDisk: 5

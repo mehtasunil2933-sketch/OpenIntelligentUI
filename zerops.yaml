@@ -1,0 +1,75 @@
+zerops:
+  # Private Python agent. Provider keys are entered in the stock website (BYOK).
+  - setup: uiagent
+    build:
+      base: python@3.12
+      os: ubuntu
+      buildCommands:
+        - python3 -m pip install --user uv
+        - python3 -m uv export --project apps/agent --frozen --no-dev --no-emit-project --format requirements-txt --output-file requirements-agent.txt
+      addToRunPrepare:
+        - requirements-agent.txt
+      deployFiles:
+        - apps/agent/main.py
+        - apps/agent/src
+        - apps/agent/skills
+    run:
+      base: python@3.12
+      os: ubuntu
+      prepareCommands:
+        - python3 -m venv /home/zerops/oiui-venv
+        - /home/zerops/oiui-venv/bin/python -m pip install --no-cache-dir -r requirements-agent.txt
+      envVariables:
+        LLM_MODEL: chat-latest
+        JEV_MODEL: jev-latest
+      start: >-
+        sh -c 'cd /var/www/apps/agent &&
+        exec /home/zerops/oiui-venv/bin/python -m uvicorn
+        main:app --host 0.0.0.0 --port 8123 --workers 1'
+      ports:
+        - port: 8123
+          httpSupport: true
+      healthCheck:
+        httpGet:
+          port: 8123
+          path: /health
+
+  # Public Next.js website. No shared provider credentials are configured here.
+  - setup: web
+    build:
+      base: nodejs@22
+      os: ubuntu
+      buildCommands:
+        - npm install --global pnpm@9.0.0
+        - pnpm install --frozen-lockfile
+        - pnpm exec turbo run build --filter=@repo/app
+        - |
+          set -eu
+          mkdir -p release
+          cp -a apps/app/.next/standalone/. release/
+          mkdir -p release/apps/app/.next
+          cp -a apps/app/.next/static release/apps/app/.next/static
+          cp -a apps/app/public release/apps/app/public
+      deployFiles:
+        - release
+    run:
+      base: nodejs@22
+      os: ubuntu
+      envVariables:
+        NODE_ENV: production
+        PORT: "3000"
+        HOSTNAME: "0.0.0.0"
+        LANGGRAPH_DEPLOYMENT_URL: http://uiagent:8123
+        RATE_LIMIT_ENABLED: "true"
+        RATE_LIMIT_WINDOW_MS: "60000"
+        RATE_LIMIT_MAX: "20"
+        DO_NOT_TRACK: "1"
+        NEXT_TELEMETRY_DISABLED: "1"
+      start: node /var/www/release/apps/app/server.js
+      ports:
+        - port: 3000
+          httpSupport: true
+      healthCheck:
+        httpGet:
+          port: 3000
+          path: /api/health

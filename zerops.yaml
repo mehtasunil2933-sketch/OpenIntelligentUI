@@ -7,12 +7,16 @@ zerops:
       buildCommands:
         - python3 -m pip install --user uv
         - python3 -m uv export --project apps/agent --frozen --no-dev --no-emit-project --format requirements-txt --output-file requirements-agent.txt
+        # Record and display the exact source commit included in this deployment.
+        - git rev-parse HEAD > apps/agent/DEPLOY_REVISION
+        - cat apps/agent/DEPLOY_REVISION
       addToRunPrepare:
         - requirements-agent.txt
       deployFiles:
         - apps/agent/main.py
         - apps/agent/src
         - apps/agent/skills
+        - apps/agent/DEPLOY_REVISION
     run:
       base: python@3.12
       os: ubuntu

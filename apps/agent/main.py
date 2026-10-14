@@ -3,7 +3,10 @@ This is the main entry point for the agent.
 It defines the workflow graph, state, tools, nodes and edges.
 """
 
+import json
+import logging
 import os
+from pathlib import Path
 import warnings
 
 from dotenv import load_dotenv
@@ -22,6 +25,7 @@ from src.credentials import (
     current_credentials,
     validate_credentials,
 )
+from src.provider_config import answer_model, answer_provider, openai_base_url, jev_api_url
 from src.visualization_router import JevVisualizationMiddleware
 from src.skill_backend import SKILL_SOURCES, build_agent_backend
 from src.query import query_data
@@ -32,6 +36,29 @@ from src.plan import plan_visualization
 from src.prompt import SYSTEM_PROMPT
 
 load_dotenv()
+
+# Source marker plus the exact commit recorded by the Zerops build. No secrets
+# or Authorization headers are included. This distinguishes a fresh deployment
+# from restarting or redeploying an older saved application version.
+PROVIDER_CONFIG_VERSION = "env-router-v2"
+_revision_file = Path(__file__).with_name("DEPLOY_REVISION")
+_deployed_revision = _revision_file.read_text(encoding="utf-8").strip() if _revision_file.is_file() else "not-recorded"
+_provider = answer_provider()
+logging.getLogger("uvicorn.error").info(
+    "[oiui-startup] %s",
+    json.dumps({
+        "config_version": PROVIDER_CONFIG_VERSION,
+        "revision": _deployed_revision,
+        "provider_mode": os.environ.get("PROVIDER_KEYS_MODE", "byok"),
+        "answer_provider": _provider,
+        "answer_model": answer_model(),
+        "openai_base_url": openai_base_url() if _provider == "openai" else "not-used",
+        "jev_api_url": jev_api_url(),
+        "jev_model": os.environ.get("JEV_MODEL", "jev-latest"),
+        "answer_key_set": bool(os.environ.get("OPENAI_API_KEY" if _provider == "openai" else "ANTHROPIC_API_KEY", "").strip()),
+        "jev_key_set": bool(os.environ.get("TYPESAFE_API_KEY", "").strip()),
+    }),
+)
 
 agent = create_deep_agent(
     model=CredentialScopedModel(fallback=build_model(allow_unconfigured=True)),
@@ -64,6 +91,12 @@ async def validate_provider_credentials():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/deployment")
+def deployment():
+    # Build identity only: never return provider configuration or credentials.
+    return {"config_version": PROVIDER_CONFIG_VERSION, "revision": _deployed_revision}
 
 
 add_langgraph_fastapi_endpoint(

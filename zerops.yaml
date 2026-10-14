@@ -29,7 +29,7 @@ zerops:
         PROVIDER_KEYS_MODE: server
         LLM_PROVIDER: openai
         OPENAI_BASE_URL: https://ninerouter-7xil.onrender.com/v1
-        LLM_MODEL: groq/openai/gpt-oss-120b
+        LLM_MODEL: ag/gemini-3.8-flash-low
         JEV_API_URL: https://ninerouter-7xil.onrender.com/v1/systemone
         JEV_MODEL: oc/jev-1.13-free
       start: >-

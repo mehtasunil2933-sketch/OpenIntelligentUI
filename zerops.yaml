@@ -17,8 +17,10 @@ zerops:
       base: python@3.12
       os: ubuntu
       prepareCommands:
-        - python3 -m venv /home/zerops/oiui-venv
-        - /home/zerops/oiui-venv/bin/python -m pip install --no-cache-dir -r requirements-agent.txt
+        # uv creates the environment without requiring stdlib ensurepip.
+        - python3 -m pip install --user uv
+        - python3 -m uv venv --python python3 --no-python-downloads /home/zerops/oiui-venv
+        - python3 -m uv pip install --python /home/zerops/oiui-venv/bin/python --no-cache -r requirements-agent.txt
       envVariables:
         LLM_MODEL: chat-latest
         JEV_MODEL: jev-latest

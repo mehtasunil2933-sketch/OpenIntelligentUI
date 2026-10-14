@@ -8,9 +8,8 @@ import { readProviderHeaders, PROVIDER_KEY_INPUT_ERROR } from "@/lib/provider-ke
 import { buildRuntimeOptions } from "@/lib/copilotkit-runtime-options";
 import { getLaunchTelemetry, observeRunResult, runtimeMethod } from "@/lib/launch-telemetry";
 
-// Simple in-memory sliding-window rate limiter (per IP)
-// Enable via RATE_LIMIT_ENABLED=true — off by default.
-// For high-traffic deployments, consider Redis-backed rate limiting instead.
+// Per-IP agent-run limiter. Runtime discovery, reconnects, and stop requests
+// must remain available even when the user has exhausted their run allowance.
 const RATE_LIMIT_ENABLED = process.env.RATE_LIMIT_ENABLED === "true";
 const RATE_LIMIT_WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS) || 60_000;
 const RATE_LIMIT_MAX = Number(process.env.RATE_LIMIT_MAX) || 40;
@@ -20,12 +19,17 @@ function isRateLimited(ip: string): boolean {
   if (!RATE_LIMIT_ENABLED) return false;
   const now = Date.now();
   const timestamps = hits.get(ip)?.filter(t => t > now - RATE_LIMIT_WINDOW_MS) ?? [];
+  // Rejected retries do not consume allowance or extend the lockout.
+  if (timestamps.length >= RATE_LIMIT_MAX) {
+    hits.set(ip, timestamps);
+    return true;
+  }
   timestamps.push(now);
   hits.set(ip, timestamps);
-  return timestamps.length > RATE_LIMIT_MAX;
+  return false;
 }
 
-// Prune stale entries every 5 min to prevent unbounded memory growth
+// Prune stale entries every 5 min to prevent unbounded memory growth.
 if (RATE_LIMIT_ENABLED) {
   setInterval(() => {
     const cutoff = Date.now() - RATE_LIMIT_WINDOW_MS;
@@ -38,9 +42,17 @@ if (RATE_LIMIT_ENABLED) {
 }
 
 export const POST = async (req: NextRequest) => {
+  // Read from a clone: the runtime still receives the original request body.
+  const method = await runtimeMethod(req);
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (isRateLimited(ip)) {
-    return new Response("Too many requests", { status: 429 });
+  if (method === "agent/run" && isRateLimited(ip)) {
+    return new Response("Too many agent runs. Please wait and retry.", {
+      status: 429,
+      headers: {
+        "Retry-After": String(Math.ceil(RATE_LIMIT_WINDOW_MS / 1000)),
+        "Cache-Control": "no-store",
+      },
+    });
   }
 
   let providerHeaders;
@@ -56,10 +68,9 @@ export const POST = async (req: NextRequest) => {
     providerHeaders,
   });
 
-  // Install counting (docs/telemetry.md). Only the first run's request body is inspected.
   const telemetry = getLaunchTelemetry();
   const telemetryProperties = telemetry.runtimeProperties();
-  const watchRun = !telemetry.activated && (await runtimeMethod(req)) === "agent/run";
+  const watchRun = !telemetry.activated && method === "agent/run";
 
   const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
     endpoint: "/api/copilotkit",

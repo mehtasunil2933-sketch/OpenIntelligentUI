@@ -42,11 +42,13 @@ zerops:
       base: nodejs@22
       os: ubuntu
       buildCommands:
-        - npm install --global pnpm@9.0.0
-        - pnpm install --frozen-lockfile
-        - pnpm exec turbo run build --filter=@repo/app
+        # Keep install and build in one shell so the user-local PATH persists.
         - |
           set -eu
+          npm install --global --prefix "$HOME/.local" pnpm@9.0.0
+          export PATH="$HOME/.local/bin:$PATH"
+          pnpm install --frozen-lockfile
+          pnpm exec turbo run build --filter=@repo/app
           mkdir -p release
           cp -a apps/app/.next/standalone/. release/
           mkdir -p release/apps/app/.next

@@ -60,14 +60,14 @@ zerops:
       envVariables:
         NODE_ENV: production
         PORT: "3000"
-        HOSTNAME: "0.0.0.0"
         LANGGRAPH_DEPLOYMENT_URL: http://uiagent:8123
         RATE_LIMIT_ENABLED: "true"
         RATE_LIMIT_WINDOW_MS: "60000"
         RATE_LIMIT_MAX: "20"
         DO_NOT_TRACK: "1"
         NEXT_TELEMETRY_DISABLED: "1"
-      start: node /var/www/release/apps/app/server.js
+      # HOSTNAME is reserved as a Zerops service variable; override only for this process.
+      start: env HOSTNAME=0.0.0.0 node /var/www/release/apps/app/server.js
       ports:
         - port: 3000
           httpSupport: true

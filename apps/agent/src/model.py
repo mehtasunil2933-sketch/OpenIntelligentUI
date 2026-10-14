@@ -10,6 +10,8 @@ from pydantic import Field
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models.chat_models import BaseChatModel
 
+from src.provider_config import answer_model, answer_provider, openai_base_url
+
 DEFAULT_MODEL = "chat-latest"
 
 # langchain-anthropic defaults max_tokens to 4096, which truncates
@@ -20,13 +22,8 @@ MAX_TOKENS = 64000
 
 
 def build_model(*, allow_unconfigured: bool = False) -> BaseChatModel:
-    model_name = os.environ.get("LLM_MODEL", DEFAULT_MODEL).strip()
-    is_openai = model_name == "chat-latest" or model_name.startswith("gpt-")
-    if not is_openai and not model_name.startswith("claude-"):
-        raise ValueError(
-            "LLM_MODEL must name a supported provider: claude-* (Anthropic) "
-            "or gpt-*/chat-latest (OpenAI). Unset LLM_MODEL to use the default."
-        )
+    model_name = answer_model()
+    is_openai = answer_provider() == "openai"
     key_name = "OPENAI_API_KEY" if is_openai else "ANTHROPIC_API_KEY"
     if not os.environ.get(key_name, "").strip():
         if allow_unconfigured:
@@ -39,7 +36,12 @@ def build_model(*, allow_unconfigured: bool = False) -> BaseChatModel:
         # chat-latest follows ChatGPT Instant; explicit gpt-* pins also work.
         from langchain_openai import ChatOpenAI
 
-        return ChatOpenAI(model=model_name)
+        return ChatOpenAI(
+            model=model_name,
+            api_key=os.environ["OPENAI_API_KEY"].strip(),
+            base_url=openai_base_url(),
+            use_responses_api=False,
+        )
     return ChatAnthropic(
         model=model_name,
         max_tokens=MAX_TOKENS,

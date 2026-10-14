@@ -11,7 +11,16 @@ from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import SystemMessage
 from pydantic import BaseModel, Field, ValidationError
 
+from src.provider_config import jev_api_url
+
 JEV_URL = "https://api.typesafe.ai/v1/systemone"
+
+
+def provider_url():
+    from src.credentials import current_credentials
+    # Visitor keys retain the stock endpoint; server mode uses configured routing.
+    return JEV_URL if current_credentials.get() else jev_api_url()
+
 VISUALIZATIONS = {
     "text": "Direct facts, prose, writing, code, conversation, or a clarification; no visual needed.",
     "table": "Basic table: exact values, records, simple side-by-side comparison; no custom interaction.",
@@ -159,7 +168,7 @@ def provider_trust_env():
 def route(context):
     try:
         with httpx.Client(timeout=15, trust_env=provider_trust_env()) as client:
-            return parse_response(client.post(JEV_URL, **request_options(context)))
+            return parse_response(client.post(provider_url(), **request_options(context)))
     except httpx.HTTPError:
         raise ValueError(
             "Jev visualization routing is unavailable or timed out. Please retry."
@@ -170,7 +179,7 @@ async def aroute(context):
     try:
         async with httpx.AsyncClient(timeout=15, trust_env=provider_trust_env()) as client:
             return parse_response(
-                await client.post(JEV_URL, **request_options(context))
+                await client.post(provider_url(), **request_options(context))
             )
     except httpx.HTTPError:
         raise ValueError(

@@ -4,6 +4,8 @@ import "./chat.css";
 import "@copilotkit/react-core/v2/styles.css";
 import { Providers } from "./providers";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.APP_URL ||
@@ -41,7 +43,7 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <Providers>{children}</Providers>
+        <Providers serverConfigured={process.env.PROVIDER_KEYS_MODE === "server"}>{children}</Providers>
       </body>
     </html>
   );

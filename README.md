@@ -140,6 +140,8 @@ These starters run the agent; they are not prerecorded responses. Jev chooses th
 
 ## Get started
 
+**Zerops / custom OpenAI-compatible router:** see [server environment configuration](docs/zerops-server-providers.md). It supports server-held keys, configurable model IDs/endpoints, and password-protected access without the browser key popup.
+
 Prerequisites: Node.js 22+, pnpm 9+, Python 3.12+, and [uv](https://docs.astral.sh/uv/).
 
 ```bash

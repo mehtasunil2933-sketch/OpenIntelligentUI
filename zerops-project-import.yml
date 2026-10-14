@@ -2,9 +2,10 @@
 # Choose EU Central (or your preferred region) and leave ZCP off for the trial.
 # Deployment configuration lives in zerops.yaml in this repository.
 # Source-checked configuration; not yet verified by a live Zerops deployment.
-# No API keys are stored here: enter OpenAI and Jev/TypeSafe keys in the website.
+# Set OPENAI_API_KEY and TYPESAFE_API_KEY as secrets on uiagent after import.
+# Set OIUI_AUTH_PASSWORD (12+ characters) as a secret on web.
 # Stock agent checkpoints are in memory and do not survive restarts.
-# The public website has no application login; add authentication before production use.
+# Server-key mode requires HTTP Basic authentication; username defaults to admin.
 project:
   name: openintelligentui
   corePackage: LIGHT

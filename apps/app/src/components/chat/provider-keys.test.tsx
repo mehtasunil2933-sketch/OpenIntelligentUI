@@ -98,3 +98,13 @@ describe("memory-only provider keys", () => {
     expect(options?.signal?.aborted).toBe(true);
   });
 });
+
+
+it("uses server configuration without exposing provider headers", () => {
+  let observed: ReturnType<typeof useProviderKeys> | undefined;
+  function Probe() { observed = useProviderKeys(); return null; }
+  render(<ProviderKeysProvider serverConfigured><Probe /></ProviderKeysProvider>);
+  expect(observed?.hasKeys).toBe(true);
+  expect(observed?.serverConfigured).toBe(true);
+  expect(observed?.headers).toBeUndefined();
+});

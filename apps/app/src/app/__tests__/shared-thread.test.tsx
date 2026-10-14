@@ -165,3 +165,15 @@ it("submits through the real chat-only page composer and preserves its message",
   await waitFor(() => expect(runInputs).toHaveLength(1));
   expect(await screen.findByText("Explain bicycle gears")).toBeVisible();
 });
+
+
+it("submits in server mode without asking for visitor keys", async () => {
+  const runInputs = mockRuntime();
+  render(<Providers serverConfigured><RuntimeReady /><HomePage /></Providers>);
+  await waitFor(() => expect(screen.getByTestId("runtime-status")).toHaveTextContent("connected"));
+  expect(screen.queryByRole("button", { name: /API keys/ })).not.toBeInTheDocument();
+  fireEvent.change(screen.getByRole("textbox"), { target: { value: "Use the configured server model" } });
+  fireEvent.keyDown(screen.getByRole("textbox"), { key: "Enter", code: "Enter" });
+  await waitFor(() => expect(runInputs).toHaveLength(1));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});

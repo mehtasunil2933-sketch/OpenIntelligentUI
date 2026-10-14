@@ -45,7 +45,7 @@ export const POST = async (req: NextRequest) => {
 
   let providerHeaders;
   try {
-    providerHeaders = readProviderHeaders(req.headers);
+    providerHeaders = process.env.PROVIDER_KEYS_MODE === "server" ? undefined : readProviderHeaders(req.headers);
   } catch {
     return Response.json({ error: PROVIDER_KEY_INPUT_ERROR }, { status: 400, headers: { "Cache-Control": "no-store" } });
   }

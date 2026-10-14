@@ -1,5 +1,5 @@
 zerops:
-  # Private Python agent. Provider keys are entered in the stock website (BYOK).
+  # Private Python agent. Set OPENAI_API_KEY and TYPESAFE_API_KEY as Zerops secrets.
   - setup: uiagent
     build:
       base: python@3.12
@@ -22,8 +22,12 @@ zerops:
         - python3 -m uv venv --python python3 --no-python-downloads /home/zerops/oiui-venv
         - python3 -m uv pip install --python /home/zerops/oiui-venv/bin/python --no-cache -r requirements-agent.txt
       envVariables:
-        LLM_MODEL: chat-latest
-        JEV_MODEL: jev-latest
+        PROVIDER_KEYS_MODE: server
+        LLM_PROVIDER: openai
+        OPENAI_BASE_URL: https://ninerouter-7xil.onrender.com/v1
+        LLM_MODEL: openai-compatible-chat-27098f25-205c-4a7a-aee6-f84faca99c43/zai-org/GLM-5.3-Flash
+        JEV_API_URL: https://ninerouter-7xil.onrender.com/v1/systemone
+        JEV_MODEL: oc/jev-1.13-free
       start: >-
         sh -c 'cd /var/www/apps/agent &&
         exec /home/zerops/oiui-venv/bin/python -m uvicorn
@@ -36,7 +40,7 @@ zerops:
           port: 8123
           path: /health
 
-  # Public Next.js website. No shared provider credentials are configured here.
+  # Public Next.js website. Set OIUI_AUTH_PASSWORD as a Zerops secret.
   - setup: web
     build:
       base: nodejs@22
@@ -60,6 +64,8 @@ zerops:
       base: nodejs@22
       os: ubuntu
       envVariables:
+        PROVIDER_KEYS_MODE: server
+        OIUI_AUTH_USERNAME: admin
         NODE_ENV: production
         PORT: "3000"
         LANGGRAPH_DEPLOYMENT_URL: http://uiagent:8123

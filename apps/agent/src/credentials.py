@@ -9,6 +9,7 @@ import json
 import os
 
 import httpx
+from src.provider_config import answer_provider, server_provider_mode
 from copilotkit import LangGraphAGUIAgent
 from langsmith import tracing_context
 from starlette.responses import JSONResponse
@@ -46,8 +47,7 @@ def parse_credentials(headers):
 
 
 def server_credentials_available():
-    model = os.environ.get('LLM_MODEL', 'chat-latest').strip()
-    key = 'ANTHROPIC_API_KEY' if model.startswith('claude-') else 'OPENAI_API_KEY'
+    key = 'ANTHROPIC_API_KEY' if answer_provider() == 'anthropic' else 'OPENAI_API_KEY'
     return bool(os.environ.get(key, '').strip() and os.environ.get('TYPESAFE_API_KEY', '').strip())
 
 
@@ -64,6 +64,8 @@ class CredentialsMiddleware:
             return await JSONResponse({'ok': False, 'code': 'invalid_keys'}, status_code=400)(scope, receive, send)
         if scope['path'] == '/' and not credentials and not server_credentials_available():
             return await JSONResponse({'ok': False, 'code': 'credentials_required'}, status_code=401)(scope, receive, send)
+        if server_provider_mode() and credentials is not None:
+            return await JSONResponse({'ok': False, 'code': 'visitor_keys_disabled'}, status_code=400)(scope, receive, send)
         clean_scope = {**scope, 'headers': [(k, v) for k, v in scope.get('headers', []) if k.lower() not in SENSITIVE_HEADERS]}
         token = current_credentials.set(credentials)
         try:

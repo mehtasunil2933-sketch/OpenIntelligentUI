@@ -18,7 +18,7 @@ export default function HomePage() {
   useGenerativeUIExamples();
   useExampleSuggestions();
   const { agent } = useAgent();
-  const { newChat, hasKeys, keysOpen, setKeysOpen } = useProviderKeys();
+  const { newChat, hasKeys, serverConfigured, keysOpen, setKeysOpen } = useProviderKeys();
   const { copilotkit } = useCopilotKit();
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
@@ -86,9 +86,9 @@ export default function HomePage() {
           <button type="button" onClick={newChat} disabled={agent.isRunning || retrying}>
             New chat
           </button>
-          <button type="button" onClick={() => setKeysOpen(true)} disabled={agent.isRunning || retrying} aria-haspopup="dialog">
+          {!serverConfigured && <button type="button" onClick={() => setKeysOpen(true)} disabled={agent.isRunning || retrying} aria-haspopup="dialog">
             API keys{hasKeys ? " •" : ""}
-          </button>
+          </button>}
           <a
             href="https://github.com/CopilotKit/OpenIntelligentUI"
             target="_blank"
@@ -112,7 +112,7 @@ export default function HomePage() {
           </a>
         </nav>
       </header>
-      {keysOpen && <ProviderKeysDialog onClose={() => setKeysOpen(false)} disabled={agent.isRunning || retrying} />}
+      {!serverConfigured && keysOpen && <ProviderKeysDialog onClose={() => setKeysOpen(false)} disabled={agent.isRunning || retrying} />}
       <main id="main-content" className="chat-main">
         {error && (
           <div className="chat-error" role="alert">
@@ -124,7 +124,7 @@ export default function HomePage() {
             >
               Retry answer
             </button>
-            <button type="button" className="provider-keys-recover" disabled={retrying || agent.isRunning} onClick={() => setKeysOpen(true)}>API keys</button>
+            {!serverConfigured && <button type="button" className="provider-keys-recover" disabled={retrying || agent.isRunning} onClick={() => setKeysOpen(true)}>API keys</button>}
           </div>
         )}
         <div className="chat-content" ref={chatRoot}>

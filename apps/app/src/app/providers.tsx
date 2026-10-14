@@ -19,11 +19,11 @@ const openGenerativeUI = {
   designSkill: OPEN_GEN_UI_DESIGN_SKILL,
 };
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children, serverConfigured = false }: { children: React.ReactNode; serverConfigured?: boolean }) {
   return (
     <ThemeProvider>
       <PostHogAnalytics />
-      <ProviderKeysProvider>
+      <ProviderKeysProvider serverConfigured={serverConfigured}>
         <ChatProviders>{children}</ChatProviders>
       </ProviderKeysProvider>
     </ThemeProvider>

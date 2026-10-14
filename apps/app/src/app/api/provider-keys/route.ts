@@ -12,6 +12,7 @@ const reply = (body: object, status: number) => Response.json(body, {
 });
 
 export async function POST(request: Request) {
+  if (process.env.PROVIDER_KEYS_MODE === "server") return reply({ error: "Provider keys are configured on the server." }, 403);
   let credentials;
   try {
     credentials = readProviderHeaders(request.headers);

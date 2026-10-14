@@ -84,3 +84,15 @@ def test_missing_provider_key_has_actionable_error(monkeypatch, model, key, valu
         monkeypatch.setenv(key, value)
     with pytest.raises(ValueError, match=key):
         build_model()
+
+
+def test_custom_openai_compatible_model(monkeypatch):
+    monkeypatch.setenv("LLM_PROVIDER", "openai")
+    monkeypatch.setenv("LLM_MODEL", "router/GLM-test")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://router.example/v1")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    model = build_model()
+    assert isinstance(model, ChatOpenAI)
+    assert model.model_name == "router/GLM-test"
+    assert model.openai_api_base == "https://router.example/v1"
+    assert model.use_responses_api is False
